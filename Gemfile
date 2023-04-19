@@ -4,7 +4,7 @@ ruby '3.1.3'
 
 ##-- base gems for rails --##
 gem 'rack-cors', require: 'rack/cors'
-gem 'rails', '~> 6.1', '>= 6.1.7.1'
+gem 'rails', '~> 6.1', '>= 6.1.7.3'
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', require: false
 
@@ -87,7 +87,7 @@ gem 'line-bot-api'
 gem 'twilio-ruby', '~> 5.66'
 # twitty will handle subscription of twitter account events
 # gem 'twitty', git: 'https://github.com/chatwoot/twitty'
-gem 'twitty'
+gem 'twitty', '~> 0.1.5'
 # facebook client
 gem 'koala'
 # slack client
@@ -96,13 +96,16 @@ gem 'slack-ruby-client'
 gem 'google-cloud-dialogflow'
 
 ##-- apm and error monitoring ---#
-gem 'ddtrace'
-gem 'elastic-apm'
-gem 'newrelic_rpm'
-gem 'scout_apm'
-gem 'sentry-rails', '~> 5.3', '>= 5.3.1'
-gem 'sentry-ruby', '~> 5.3'
-gem 'sentry-sidekiq', '~> 5.3', '>= 5.3.1'
+# loaded only when environment variables are set.
+# ref application.rb
+gem 'ddtrace', require: false
+gem 'elastic-apm', require: false
+gem 'newrelic_rpm', require: false
+gem 'newrelic-sidekiq-metrics', require: false
+gem 'scout_apm', require: false
+gem 'sentry-rails', require: false
+gem 'sentry-ruby', require: false
+gem 'sentry-sidekiq', require: false
 
 ##-- background job processing --##
 gem 'sidekiq', '~> 6.4.2'
@@ -146,7 +149,23 @@ gem 'net-imap', require: false
 gem 'net-pop', require: false
 gem 'net-smtp', require: false
 
-group :production, :staging do
+# Include logrange conditionally in intializer using env variable
+gem 'lograge', '~> 0.12.0', require: false
+
+# worked with microsoft refresh token
+gem 'omniauth-oauth2'
+
+gem 'audited', '~> 5.2'
+
+# need for google auth
+gem 'omniauth'
+gem 'omniauth-google-oauth2'
+gem 'omniauth-rails_csrf_protection', '~> 1.0'
+
+### Gems required only in specific deployment environments ###
+##############################################################
+
+group :production do
   # we dont want request timing out in development while using byebug
   gem 'rack-timeout'
 end
@@ -162,6 +181,10 @@ group :development do
 
   # When we want to squash migrations
   gem 'squasher'
+
+  # profiling
+  gem 'rack-mini-profiler', require: false
+  gem 'stackprof'
 end
 
 group :test do
@@ -199,11 +222,3 @@ group :development, :test do
   gem 'spring'
   gem 'spring-watcher-listen'
 end
-
-# worked with microsoft refresh token
-gem 'omniauth-oauth2'
-
-# need for google auth
-gem 'omniauth'
-gem 'omniauth-google-oauth2'
-gem 'omniauth-rails_csrf_protection', '~> 1.0'

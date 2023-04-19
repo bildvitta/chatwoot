@@ -5,6 +5,7 @@
       :header-title="inboxName"
     >
       <woot-tabs
+        class="settings--tabs"
         :index="selectedTabIndex"
         :border="false"
         @change="onTabChange"
@@ -317,6 +318,17 @@
           />
           <label for="end_conversation">
             {{ $t('INBOX_MGMT.FEATURES.ALLOW_END_CONVERSATION') }}
+          </label>
+        </div>
+        <div v-if="isAWebWidgetInbox" class="settings-item settings-item">
+          <input
+            v-model="selectedFeatureFlags"
+            type="checkbox"
+            value="use_inbox_avatar_for_bot"
+            @input="handleFeatureFlag"
+          />
+          <label for="emoji_picker">
+            {{ $t('INBOX_MGMT.FEATURES.USE_INBOX_AVATAR_FOR_BOT') }}
           </label>
         </div>
 
@@ -668,6 +680,12 @@ export default {
 
 .settings {
   background: $color-white;
+
+  .settings--tabs {
+    ::v-deep .tabs {
+      padding: 0;
+    }
+  }
 
   .settings--content {
     div:last-child {

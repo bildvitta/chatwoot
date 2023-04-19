@@ -23,7 +23,9 @@
 # Indexes
 #
 #  index_messages_on_account_id                         (account_id)
+#  index_messages_on_account_id_and_inbox_id            (account_id,inbox_id)
 #  index_messages_on_additional_attributes_campaign_id  (((additional_attributes -> 'campaign_id'::text))) USING gin
+#  index_messages_on_content                            (content) USING gin
 #  index_messages_on_conversation_id                    (conversation_id)
 #  index_messages_on_inbox_id                           (inbox_id)
 #  index_messages_on_sender_type_and_sender_id          (sender_type,sender_id)
@@ -79,6 +81,10 @@ class Message < ApplicationRecord
   scope :chat, -> { where.not(message_type: :activity).where(private: false) }
   scope :non_activity_messages, -> { where.not(message_type: :activity).reorder('id desc') }
   scope :today, -> { where("date_trunc('day', created_at) = ?", Date.current) }
+
+  # TODO: Get rid of default scope
+  # https://stackoverflow.com/a/1834250/939299
+  # if you want to change order, use `reorder`
   default_scope { order(created_at: :asc) }
 
   belongs_to :account
@@ -167,6 +173,10 @@ class Message < ApplicationRecord
     true
   end
 
+  def valid_first_reply?
+    outgoing? && human_response? && not_created_by_automation? && !private?
+  end
+
   private
 
   def ensure_content_type
@@ -188,10 +198,38 @@ class Message < ApplicationRecord
     sender.update(last_activity_at: DateTime.now) if sender.is_a?(Contact)
   end
 
+  def human_response?
+    # given the checks are already in place, we need not query
+    # the database again to check if the message is created by a human
+    # we can just see if the first_reply is recorded or not
+    # if it is record, we can just return false
+    return false if conversation.first_reply_created_at.present?
+
+    # if the sender is not a user, it's not a human response
+    return false unless sender.is_a?(User)
+
+    # if automation rule id is present, it's not a human response
+    # if campaign id is present, it's not a human response
+    # this check already happens in `not_created_by_automation` but added here for the sake of brevity
+    # also the purity of this method is intact, and can be relied on this solely
+    return false if content_attributes['automation_rule_id'].present? || additional_attributes['campaign_id'].present?
+
+    # adding this condition again to ensure if the first_reply_created_at is not present
+    return false if conversation.messages.outgoing
+                                .where.not(sender_type: 'AgentBot')
+                                .where.not(private: true)
+                                .where("(additional_attributes->'campaign_id') is null").count > 1
+
+    true
+  end
+
+  def not_created_by_automation?
+    content_attributes['automation_rule_id'].blank?
+  end
+
   def dispatch_create_events
     Rails.configuration.dispatcher.dispatch(MESSAGE_CREATED, Time.zone.now, message: self, performed_by: Current.executed_by)
-
-    if outgoing? && conversation.messages.outgoing.where("(additional_attributes->'campaign_id') is null").count == 1
+    if valid_first_reply?
       Rails.configuration.dispatcher.dispatch(FIRST_REPLY_CREATED, Time.zone.now, message: self, performed_by: Current.executed_by)
     end
   end
@@ -219,9 +257,16 @@ class Message < ApplicationRecord
     # mark resolved bot conversation as pending to be reopened by bot processor service
     if conversation.inbox.active_bot?
       conversation.pending!
+    elsif conversation.inbox.api?
+      Current.executed_by = sender if reopened_by_contact?
+      conversation.open!
     else
       conversation.open!
     end
+  end
+
+  def reopened_by_contact?
+    incoming? && !private? && Current.user.class != sender.class && sender.instance_of?(Contact)
   end
 
   def execute_message_template_hooks

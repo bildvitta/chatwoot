@@ -112,9 +112,25 @@ describe Whatsapp::Providers::WhatsappCloudService do
     context 'when called' do
       it 'updated the message templates' do
         stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key')
-          .to_return(status: 200, headers: response_headers, body: { data: [{ id: '123456789', name: 'test_template' }] }.to_json)
+          .to_return(
+            { status: 200, headers: response_headers,
+              body: { data: [
+                { id: '123456789', name: 'test_template' }
+              ], paging: { next: 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key' } }.to_json },
+            { status: 200, headers: response_headers,
+              body: { data: [
+                { id: '123456789', name: 'next_template' }
+              ], paging: { next: 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key' } }.to_json },
+            { status: 200, headers: response_headers,
+              body: { data: [
+                { id: '123456789', name: 'last_template' }
+              ], paging: { prev: 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key' } }.to_json }
+          )
+
         expect(subject.sync_templates).to be(true)
-        expect(whatsapp_channel.reload.message_templates).to eq([{ id: '123456789', name: 'test_template' }.stringify_keys])
+        expect(whatsapp_channel.reload.message_templates.first).to eq({ id: '123456789', name: 'test_template' }.stringify_keys)
+        expect(whatsapp_channel.reload.message_templates.second).to eq({ id: '123456789', name: 'next_template' }.stringify_keys)
+        expect(whatsapp_channel.reload.message_templates.last).to eq({ id: '123456789', name: 'last_template' }.stringify_keys)
       end
     end
   end
@@ -130,6 +146,22 @@ describe Whatsapp::Providers::WhatsappCloudService do
       it 'returns false if invalid' do
         stub_request(:get, 'https://graph.facebook.com/v14.0/123456789/message_templates?access_token=test_key').to_return(status: 401)
         expect(subject.validate_provider_config?).to be(false)
+      end
+    end
+  end
+
+  describe 'Ability to configure Base URL' do
+    context 'when environment variable WHATSAPP_CLOUD_BASE_URL is not set' do
+      it 'uses the default base url' do
+        expect(subject.send(:api_base_path)).to eq('https://graph.facebook.com')
+      end
+    end
+
+    context 'when environment variable WHATSAPP_CLOUD_BASE_URL is set' do
+      it 'uses the base url from the environment variable' do
+        with_modified_env WHATSAPP_CLOUD_BASE_URL: 'http://test.com' do
+          expect(subject.send(:api_base_path)).to eq('http://test.com')
+        end
       end
     end
   end

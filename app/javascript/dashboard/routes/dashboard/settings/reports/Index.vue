@@ -2,13 +2,12 @@
   <div class="column content-box">
     <woot-button
       color-scheme="success"
-      class-names="button--fixed-right-top"
+      class-names="button--fixed-top"
       icon="arrow-download"
       @click="downloadAgentReports"
     >
       {{ $t('REPORT.DOWNLOAD_AGENT_REPORTS') }}
     </woot-button>
-
     <report-filter-selector
       group-by-filter
       :selected-group-by-filter="selectedGroupByFilter"
@@ -70,6 +69,7 @@ const REPORTS_KEYS = {
 };
 
 export default {
+  name: 'ConversationReports',
   components: {
     ReportFilterSelector,
   },
@@ -254,8 +254,8 @@ export default {
         reportType: 'conversations',
       });
     },
-    fetchFilterItems(group_by) {
-      switch (group_by) {
+    fetchFilterItems(groupBy) {
+      switch (groupBy) {
         case GROUP_BY_FILTER[2].period:
           return this.$t('REPORT.GROUP_BY_WEEK_OPTIONS');
         case GROUP_BY_FILTER[3].period:

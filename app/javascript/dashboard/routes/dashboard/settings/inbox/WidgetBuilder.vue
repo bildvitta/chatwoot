@@ -1,6 +1,6 @@
 <template>
   <div class="settings--content">
-    <div class="widget-builder-conatiner">
+    <div class="widget-builder-container">
       <div class="settings-container">
         <div class="settings-content">
           <form @submit.prevent="updateWidget">
@@ -158,10 +158,8 @@ import Widget from 'dashboard/modules/widget-preview/components/Widget';
 import InputRadioGroup from './components/InputRadioGroup';
 import alertMixin from 'shared/mixins/alertMixin';
 import { required } from 'vuelidate/lib/validators';
-import {
-  LocalStorage,
-  LOCAL_STORAGE_KEYS,
-} from 'dashboard/helper/localStorage';
+import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
+import { LocalStorage } from 'shared/helpers/localStorage';
 
 export default {
   components: {
@@ -420,7 +418,7 @@ export default {
 <style lang="scss" scoped>
 @import '~dashboard/assets/scss/woot';
 
-.widget-builder-conatiner {
+.widget-builder-container {
   display: flex;
   flex-direction: row;
   padding: var(--space-one);

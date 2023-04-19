@@ -27,6 +27,7 @@
 #
 # Indexes
 #
+#  conv_acid_inbid_stat_asgnid_idx                    (account_id,inbox_id,status,assignee_id)
 #  index_conversations_on_account_id                  (account_id)
 #  index_conversations_on_account_id_and_display_id   (account_id,display_id) UNIQUE
 #  index_conversations_on_assignee_id_and_account_id  (assignee_id,account_id)
@@ -34,6 +35,7 @@
 #  index_conversations_on_contact_id                  (contact_id)
 #  index_conversations_on_contact_inbox_id            (contact_inbox_id)
 #  index_conversations_on_first_reply_created_at      (first_reply_created_at)
+#  index_conversations_on_id_and_account_id           (account_id,id)
 #  index_conversations_on_inbox_id                    (inbox_id)
 #  index_conversations_on_last_activity_at            (last_activity_at)
 #  index_conversations_on_status_and_account_id       (status,account_id)
@@ -48,6 +50,7 @@ class Conversation < ApplicationRecord
   include ActivityMessageHandler
   include UrlHelper
   include SortHandler
+  include ConversationMuteHelpers
 
   validates :account_id, presence: true
   validates :inbox_id, presence: true
@@ -142,19 +145,9 @@ class Conversation < ApplicationRecord
     save
   end
 
-  def mute!
-    resolved!
-    Redis::Alfred.setex(mute_key, 1, mute_period)
-    create_muted_message
-  end
-
-  def unmute!
-    Redis::Alfred.delete(mute_key)
-    create_unmuted_message
-  end
-
-  def muted?
-    Redis::Alfred.get(mute_key).present?
+  def bot_handoff!
+    open!
+    dispatcher_dispatch(CONVERSATION_BOT_HANDOFF)
   end
 
   def unread_messages
@@ -219,10 +212,16 @@ class Conversation < ApplicationRecord
   end
 
   def notify_conversation_updation
-    return unless previous_changes.keys.present? && (previous_changes.keys & %w[team_id assignee_id status snoozed_until
-                                                                                custom_attributes label_list first_reply_created_at]).present?
+    return unless previous_changes.keys.present? && whitelisted_keys?
 
     dispatcher_dispatch(CONVERSATION_UPDATED, previous_changes)
+  end
+
+  def whitelisted_keys?
+    (
+      (previous_changes.keys & %w[team_id assignee_id status snoozed_until custom_attributes label_list first_reply_created_at]).present? ||
+      (previous_changes['additional_attributes'].present? && (previous_changes['additional_attributes'][1].keys & %w[conversation_language]).present?)
+    )
   end
 
   def self_assign?(assignee_id)
@@ -267,14 +266,6 @@ class Conversation < ApplicationRecord
 
     create_label_added(user_name, current_labels - previous_labels)
     create_label_removed(user_name, previous_labels - current_labels)
-  end
-
-  def mute_key
-    format(Redis::RedisKeys::CONVERSATION_MUTE_KEY, id: id)
-  end
-
-  def mute_period
-    6.hours
   end
 
   def validate_referer_url

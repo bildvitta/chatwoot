@@ -2,7 +2,7 @@
   <div class="column content-box">
     <woot-button
       color-scheme="success"
-      class-names="button--fixed-right-top"
+      class-names="button--fixed-top"
       icon="add-circle"
       @click="openAddPopup()"
     >
@@ -108,6 +108,7 @@
         :name="currentAgent.name"
         :type="currentAgent.role"
         :email="currentAgent.email"
+        :availability="currentAgent.availability_status"
         :on-close="hideEditPopup"
       />
     </woot-modal>

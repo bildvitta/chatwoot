@@ -27,7 +27,7 @@
       <emoji-input
         v-if="showEmojiPicker"
         v-on-clickaway="hideEmojiPicker"
-        :class="emojiDialogClassOnExpanedLayout"
+        :class="emojiDialogClassOnExpandedLayoutAndRTLView"
         :on-click="emojiOnClick"
       />
       <reply-email-head
@@ -174,11 +174,13 @@ import inboxMixin from 'shared/mixins/inboxMixin';
 import uiSettingsMixin from 'dashboard/mixins/uiSettings';
 import { DirectUpload } from 'activestorage';
 import { frontendURL } from '../../../helper/URLHelper';
-import { LocalStorage, LOCAL_STORAGE_KEYS } from '../../../helper/localStorage';
+import { LOCAL_STORAGE_KEYS } from 'dashboard/constants/localStorage';
+import { LocalStorage } from 'shared/helpers/localStorage';
 import { trimContent, debounce } from '@chatwoot/utils';
-import wootConstants from 'dashboard/constants';
+import wootConstants from 'dashboard/constants/globals';
 import { isEditorHotKeyEnabled } from 'dashboard/mixins/uiSettings';
 import { CONVERSATION_EVENTS } from '../../../helper/AnalyticsHelper/events';
+import rtlMixin from 'shared/mixins/rtlMixin';
 
 const EmojiInput = () => import('shared/components/emoji/EmojiInput');
 
@@ -202,6 +204,7 @@ export default {
     uiSettingsMixin,
     alertMixin,
     messageFormatterMixin,
+    rtlMixin,
   ],
   props: {
     selectedTweet: {
@@ -334,6 +337,12 @@ export default {
         this.message.length > this.maxLength
       );
     },
+    sender() {
+      return {
+        name: this.currentUser.name,
+        thumbnail: this.currentUser.avatar_url,
+      };
+    },
     conversationType() {
       const { additional_attributes: additionalAttributes } = this.currentChat;
       const type = additionalAttributes ? additionalAttributes.type : '';
@@ -422,10 +431,14 @@ export default {
       } = this.uiSettings;
       return conversationDisplayType !== CONDENSED;
     },
-    emojiDialogClassOnExpanedLayout() {
-      return this.isOnExpandedLayout || this.popoutReplyBox
-        ? 'emoji-dialog--expanded'
-        : '';
+    emojiDialogClassOnExpandedLayoutAndRTLView() {
+      if (this.isOnExpandedLayout || this.popoutReplyBox) {
+        return 'emoji-dialog--expanded';
+      }
+      if (this.isRTLView) {
+        return 'emoji-dialog--rtl';
+      }
+      return '';
     },
     replyToUserLength() {
       const selectedTweet = this.selectedTweet || {};
@@ -446,7 +459,12 @@ export default {
       return !this.isOnPrivateNote && this.isAnEmailChannel;
     },
     enableMultipleFileUpload() {
-      return this.isAnEmailChannel || this.isAWebWidgetInbox || this.isAPIInbox;
+      return (
+        this.isAnEmailChannel ||
+        this.isAWebWidgetInbox ||
+        this.isAPIInbox ||
+        this.isAWhatsAppChannel
+      );
     },
     isSignatureEnabledForInbox() {
       return !this.isPrivate && this.isAnEmailChannel && this.sendWithSignature;
@@ -881,6 +899,11 @@ export default {
     toggleTyping(status) {
       const conversationId = this.currentChat.id;
       const isPrivate = this.isPrivate;
+
+      if (!conversationId) {
+        return;
+      }
+
       this.$store.dispatch('conversationTypingStatus/toggleTyping', {
         status,
         conversationId,
@@ -968,15 +991,9 @@ export default {
     },
     getMessagePayloadForWhatsapp(message) {
       const multipleMessagePayload = [];
-      const messagePayload = {
-        conversationId: this.currentChat.id,
-        message,
-        private: false,
-      };
-
-      multipleMessagePayload.push(messagePayload);
 
       if (this.attachedFiles && this.attachedFiles.length) {
+        let caption = message;
         this.attachedFiles.forEach(attachment => {
           const attachedFile = this.globalConfig.directUploadsEnabled
             ? attachment.blobSignedId
@@ -985,10 +1002,20 @@ export default {
             conversationId: this.currentChat.id,
             files: [attachedFile],
             private: false,
-            message: '',
+            message: caption,
+            sender: this.sender,
           };
           multipleMessagePayload.push(attachmentPayload);
+          caption = '';
         });
+      } else {
+        const messagePayload = {
+          conversationId: this.currentChat.id,
+          message,
+          private: false,
+          sender: this.sender,
+        };
+        multipleMessagePayload.push(messagePayload);
       }
 
       return multipleMessagePayload;
@@ -998,6 +1025,7 @@ export default {
         conversationId: this.currentChat.id,
         message,
         private: this.isPrivate,
+        sender: this.sender,
       };
 
       if (this.inReplyTo) {
@@ -1096,7 +1124,7 @@ export default {
 
 .emoji-dialog {
   top: unset;
-  bottom: var(--space-normal);
+  bottom: -40px;
   left: -320px;
   right: unset;
 
@@ -1107,6 +1135,19 @@ export default {
     filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.08));
   }
 }
+
+.emoji-dialog--rtl {
+  left: unset;
+  right: -320px;
+  &::before {
+    left: var(--space-minus-normal);
+    transform: rotate(90deg);
+    right: 0;
+    bottom: var(--space-small);
+    filter: drop-shadow(0px 4px 4px rgba(0, 0, 0, 0.08));
+  }
+}
+
 .emoji-dialog--expanded {
   left: unset;
   bottom: var(--space-jumbo);

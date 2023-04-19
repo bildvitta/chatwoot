@@ -6,6 +6,7 @@
         variant="clear"
         size="small"
         color-scheme="primary"
+        class="back-button"
         @click="onClickGoBack"
       >
         {{ backButtonLabel }}
@@ -42,7 +43,7 @@
         v-if="!isSidebarOpen"
         v-tooltip.top-end="$t('HELP_CENTER.EDIT_HEADER.OPEN_SIDEBAR')"
         icon="pane-open"
-        class-names="article--buttons"
+        class-names="article--buttons sidebar-button"
         variant="hollow"
         size="small"
         color-scheme="secondary"
@@ -106,7 +107,7 @@
 <script>
 import alertMixin from 'shared/mixins/alertMixin';
 import { mixin as clickaway } from 'vue-clickaway';
-import wootConstants from 'dashboard/constants.js';
+import wootConstants from 'dashboard/constants/globals';
 import { PORTALS_EVENTS } from '../../../../../helper/AnalyticsHelper/events';
 
 const { ARTICLE_STATUS_TYPES } = wootConstants;

@@ -45,7 +45,6 @@
             variant="smooth"
             color-scheme="alert"
             icon="delete"
-            class="delete-custom-view__button"
             @click="onClickOpenDeleteFoldersModal"
           />
         </div>
@@ -53,11 +52,10 @@
         <woot-button
           v-else
           v-tooltip.right="$t('FILTER.TOOLTIP_LABEL')"
-          variant="clear"
+          variant="smooth"
           color-scheme="secondary"
           icon="filter"
-          size="small"
-          class="btn-filter"
+          size="tiny"
           @click="onToggleAdvanceFiltersModal"
         />
       </div>
@@ -175,7 +173,7 @@ import ConversationCard from './widgets/conversation/ConversationCard';
 import timeMixin from '../mixins/time';
 import eventListenerMixins from 'shared/mixins/eventListenerMixins';
 import conversationMixin from '../mixins/conversations';
-import wootConstants from '../constants';
+import wootConstants from 'dashboard/constants/globals';
 import advancedFilterTypes from './widgets/conversation/advancedFilterItems';
 import filterQueryGenerator from '../helper/filterQueryGenerator.js';
 import AddCustomViews from 'dashboard/routes/dashboard/customviews/AddCustomViews';
@@ -836,18 +834,21 @@ export default {
 .filter--actions {
   display: flex;
   align-items: center;
-}
-
-.btn-filter {
-  margin: 0 var(--space-smaller);
+  gap: var(--space-micro);
 }
 
 .filter__applied {
-  padding: 0 0 var(--space-slab) 0 !important;
+  padding-bottom: var(--space-slab) !important;
   border-bottom: 1px solid var(--color-border);
 }
 
-.delete-custom-view__button {
-  margin-right: var(--space-normal);
+.tab--chat-type {
+  padding: 0 var(--space-normal);
+
+  ::v-deep {
+    .tabs {
+      padding: 0;
+    }
+  }
 }
 </style>

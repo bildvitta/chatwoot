@@ -439,7 +439,8 @@
       "LABEL": "Funzionalità",
       "DISPLAY_FILE_PICKER": "Visualizza il selettore di file sul widget",
       "DISPLAY_EMOJI_PICKER": "Visualizza il selettore emoji sul widget",
-      "ALLOW_END_CONVERSATION": "Consenti agli utenti di terminare la conversazione dal widget"
+      "ALLOW_END_CONVERSATION": "Consenti agli utenti di terminare la conversazione dal widget",
+      "USE_INBOX_AVATAR_FOR_BOT": "Use inbox name and avatar for the bot"
     },
     "SETTINGS_POPUP": {
       "MESSENGER_HEADING": "Script Messenger",
@@ -476,7 +477,8 @@
       "WHATSAPP_SECTION_TITLE": "Chiave API",
       "WHATSAPP_SECTION_UPDATE_TITLE": "Update API Key",
       "WHATSAPP_SECTION_UPDATE_PLACEHOLDER": "Enter the new API Key here",
-      "WHATSAPP_SECTION_UPDATE_BUTTON": "Aggiorna"
+      "WHATSAPP_SECTION_UPDATE_BUTTON": "Aggiorna",
+      "UPDATE_PRE_CHAT_FORM_SETTINGS": "Update Pre Chat Form Settings"
     },
     "AUTO_ASSIGNMENT": {
       "MAX_ASSIGNMENT_LIMIT": "Limite assegnazione automatica",

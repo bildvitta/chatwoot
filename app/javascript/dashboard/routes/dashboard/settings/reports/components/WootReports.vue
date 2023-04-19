@@ -2,7 +2,7 @@
   <div class="column content-box">
     <woot-button
       color-scheme="success"
-      class-names="button--fixed-right-top"
+      class-names="button--fixed-top"
       icon="arrow-download"
       @click="downloadReports"
     >
@@ -308,8 +308,8 @@ export default {
         reportType: this.type,
       });
     },
-    fetchFilterItems(group_by) {
-      switch (group_by) {
+    fetchFilterItems(groupBy) {
+      switch (groupBy) {
         case GROUP_BY_FILTER[2].period:
           return this.$t('REPORT.GROUP_BY_WEEK_OPTIONS');
         case GROUP_BY_FILTER[3].period:
